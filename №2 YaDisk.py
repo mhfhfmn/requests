@@ -1,3 +1,33 @@
+"""
+https://curlconverter.com/#python
+
+
+
+
+
+#curl -X GET --header 'Accept: application/json' --header 'Authorization: OAuth AQAAAABdQYihAADLW-kcmghJMEY7lfJZUpFynMA' 'https://cloud-api.yandex.net/v1/disk/resources?path=%2F'
+
+import requests
+from pprint import pprint
+
+headers = {
+    'Accept': 'application/json',
+    'Authorization': 'OAuth AQAAAABdQYihAADLW-kcmghJMEY7lfJZUpFynMA',
+}
+
+params = (
+    ('path', '/'),
+)
+
+response = requests.get('https://cloud-api.yandex.net/v1/disk/resources', headers=headers, params=params)
+
+pprint(response.json())
+
+
+
+"""
+
+
 token = 'AQAAAABdQYihAADLW-kcmghJMEY7lfJZUpFynMA'
 
 
