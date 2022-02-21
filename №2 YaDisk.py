@@ -1,50 +1,92 @@
 """
-https://curlconverter.com/#python
-
-
-
-
-
-#curl -X GET --header 'Accept: application/json' --header 'Authorization: OAuth AQAAAABdQYihAADLW-kcmghJMEY7lfJZUpFynMA' 'https://cloud-api.yandex.net/v1/disk/resources?path=%2F'
-
-import requests
-from pprint import pprint
-
-headers = {
-    'Accept': 'application/json',
-    'Authorization': 'OAuth AQAAAABdQYihAADLW-kcmghJMEY7lfJZUpFynMA',
-}
-
-params = (
-    ('path', '/'),
-)
-
-response = requests.get('https://cloud-api.yandex.net/v1/disk/resources', headers=headers, params=params)
-
-pprint(response.json())
-
-
-
+Программа запрашивает токен Яндекс API и путь к файлу или каталогу;
+если выбран файл, она его загружает в корень Яндекс диска,
+если выбран каталог она создает в корне Яндекс диска папку с таким же названием
+и загружает в нее все файлы.
+К сожалению, запрашиваемый каталог не должен содержать внутри себя каталогов(выдаст ошибку, дойдя до его обработки)
+С этим разберусь чуть позже, надеюсь для зачета по ДЗ этого хватит.
+Спасибо за проверку.
 """
 
 
-token = 'AQAAAABdQYihAADLW-kcmghJMEY7lfJZUpFynMA'
+import requests
+import os
+
 
 
 class YaUploader:
     def __init__(self, token: str):
         self.token = token
 
-    def upload(self, file_path: str):
-        pass
-        """Метод загружает файлы по списку file_list на яндекс диск"""
-        # Тут ваша логика
-        # Функция может ничего не возвращать
+
+
+
+    def get_headers(self):
+        return {
+            'Content-Type': 'application/json',
+            'Authorization': 'OAuth {}'.format(self.token)
+        }
+
+
+
+
+    def _get_upload_link(self,  file_name):
+            upload_url = "https://cloud-api.yandex.net/v1/disk/resources/upload"
+            headers = self.get_headers()
+            params = {"path": file_name, "overwrite": "true"}
+            response = requests.get(upload_url, headers=headers, params=params)
+            return response.json()
+
+
+    def upload_file(self, local_file):
+        href = self._get_upload_link(local_file.split('\\')[-1]).get("href", "")
+        response = requests.put(href, data=open(local_file, 'rb'))
+        response.raise_for_status()
+
+
+    def new_folder(self, path):
+        folder_url = "https://cloud-api.yandex.net/v1/disk/resources"
+        headers = self.get_headers()
+        params = {'path': path, 'overwrite': 'true'}
+        response = requests.put(folder_url, headers=headers, params=params)
+
+    def upload_file_in_derectory(self, local_file):
+        path_to_upload = '{}/{}'
+        href = self._get_upload_link(path_to_upload.format(local_file.split('\\')[-2], local_file.split('\\')[-1])).get("href", "")
+        response = requests.put(href, data=open(local_file, 'rb'))
+        response.raise_for_status()
+
+    def upload_path(self, local_path):
+        self.new_folder(local_path.split('\\')[-1])
+        os.chdir(path_to_file)
+        list_files = os.listdir()
+        for file in list_files:
+            file_path = f'''{local_path}\{file}'''
+            self.upload_file_in_derectory(file_path)
+
+
+
+
+
+def main():
+    if os.path.exists(path_to_file):
+        uploader = YaUploader(token)
+        if os.path.isfile(path_to_file):
+            uploader.upload_file(path_to_file)
+            print('Файл загружен')
+        elif os.path.isdir(path_to_file):
+            uploader.upload_path(path_to_file)
+            print('Каталог загружен')
+    else:
+        print('Файл или каталог не найден!')
+
+
+
+
+
 
 
 if __name__ == '__main__':
-    # Получить путь к загружаемому файлу и токен от пользователя
-    path_to_file = input('Введите путь к файлу: ')
-    token = input('Введите token: ')
-    uploader = YaUploader(token)
-    result = uploader.upload(path_to_file)
+    path_to_file = input('Введите путь к файлу или каталогу: ')
+    token = input('Введите Токен Яндекс API: ')
+    main()
